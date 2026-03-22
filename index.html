@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>WTS — Blacklist</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#07100f;--bg2:#0b1a18;--bg3:#0f2220;--card:#0d1e1c;--border:#1a3a36;
+  --teal:#1cb5a0;--teal-dim:#0d6b5e;--teal-glow:#22e8ce;--teal-bg:rgba(28,181,160,0.08);
+  --red:#c0392b;--red-dim:#7a1e15;--red-bg:rgba(192,57,43,0.1);
+  --text:#b8ddd8;--text-dim:#4a7a74;--text-muted:#2d5550;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow-x:hidden}
+
+/* NOISE */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");opacity:.4}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px)}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+#splash.hide{animation:splashOut .6s ease forwards}
+@keyframes splashOut{to{opacity:0;pointer-events:none;visibility:hidden}}
+
+.splash-bg{position:absolute;inset:0;overflow:hidden}
+.splash-ring{position:absolute;border-radius:50%;border:1px solid var(--teal-dim);opacity:0;animation:ringPulse 3s ease-in-out infinite}
+.splash-ring:nth-child(1){width:200px;height:200px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:0s}
+.splash-ring:nth-child(2){width:320px;height:320px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:.4s}
+.splash-ring:nth-child(3){width:440px;height:440px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:.8s}
+@keyframes ringPulse{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}40%{opacity:.4}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
+
+.splash-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:20px}
+
+.splash-logo{width:120px;height:120px;background:linear-gradient(135deg,#0b2a26,#0f3530);border:2px solid var(--teal-dim);border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;animation:logoAppear 1s cubic-bezier(.34,1.56,.64,1) .3s both}
+@keyframes logoAppear{from{opacity:0;transform:scale(.5) rotate(-10deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.splash-logo::before{content:'';position:absolute;inset:-1px;border-radius:6px;background:linear-gradient(135deg,var(--teal-dim),transparent,var(--teal-dim));opacity:.3}
+.splash-logo svg{width:76px;height:76px}
+
+.splash-title{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;letter-spacing:8px;color:var(--teal-glow);text-shadow:0 0 30px rgba(34,232,206,.5);animation:titleAppear .8s ease .8s both}
+@keyframes titleAppear{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.splash-sub{font-size:10px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;animation:titleAppear .8s ease 1s both}
+
+.splash-bar-wrap{width:200px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:16px;animation:titleAppear .5s ease 1.2s both}
+.splash-bar{height:100%;width:0;background:linear-gradient(90deg,var(--teal-dim),var(--teal-glow));border-radius:2px;animation:barFill 1.8s cubic-bezier(.4,0,.2,1) 1.3s both}
+@keyframes barFill{from{width:0}to{width:100%}}
+
+.splash-pct{font-size:10px;color:var(--text-muted);letter-spacing:2px;animation:titleAppear .5s ease 1.2s both}
+
+/* ── APP ── */
+#app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;opacity:0}
+#app.show{animation:fadeIn .5s ease forwards}
+@keyframes fadeIn{to{opacity:1}}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:linear-gradient(180deg,var(--bg) 0%,rgba(7,16,15,.97) 100%);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:12px 16px}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.logo-row{display:flex;align-items:center;gap:10px}
+.mini-logo{width:38px;height:38px;background:linear-gradient(135deg,#0b2a26,#0f3530);border:1px solid var(--teal-dim);border-radius:4px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(28,181,160,.2);flex-shrink:0}
+.mini-logo svg{width:24px;height:24px}
+.logo-text .t1{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;color:var(--teal-glow);letter-spacing:3px;line-height:1;text-shadow:0 0 12px rgba(34,232,206,.3)}
+.logo-text .t2{font-size:8px;color:var(--text-dim);letter-spacing:2px;line-height:1.5}
+.stat-chip{font-size:9px;letter-spacing:1px;color:var(--text-dim);background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:4px 10px}
+.stat-chip span{color:var(--teal);font-weight:700}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px}
+.tab{flex:1;padding:9px 4px;font-size:10px;letter-spacing:1.5px;font-weight:600;text-transform:uppercase;text-align:center;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:3px;transition:all .2s;user-select:none}
+.tab.active{background:var(--teal-bg);border-color:var(--teal-dim);color:var(--teal-glow);box-shadow:0 0 16px rgba(28,181,160,.12)}
+.tab.admin-tab.active{background:var(--red-bg);border-color:var(--red);color:#e74c3c}
+
+/* ── PAGES ── */
+.page{display:none;padding:16px;flex-direction:column;gap:12px}
+.page.active{display:flex}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative}
+.search-input{width:100%;padding:12px 46px 12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
+.search-input::placeholder{color:var(--text-muted)}
+.search-input:focus{border-color:var(--teal-dim);box-shadow:0 0 0 3px rgba(28,181,160,.08)}
+.search-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:16px;pointer-events:none}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:9px;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase;border-left:2px solid var(--teal-dim);padding-left:8px}
+
+/* ── SCAMMER CARD ── */
+.scammer-card{background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s,box-shadow .25s,transform .2s;animation:cardIn .35s cubic-bezier(.34,1.2,.64,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.scammer-card:active{transform:scale(.99)}
+.scammer-card.danger{border-left:3px solid var(--red)}
+.scammer-card.warning{border-left:3px solid #e67e22}
+
+.card-header{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)}
+.avatar{width:50px;height:50px;border-radius:4px;background:linear-gradient(135deg,var(--bg3),var(--bg2));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--teal-dim);flex-shrink:0;overflow:hidden;position:relative}
+.avatar img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.card-info{flex:1;min-width:0}
+.card-name{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-username{font-size:11px;color:var(--teal);margin-top:1px}
+.threat-badge{font-size:8px;letter-spacing:1.5px;font-weight:600;padding:4px 8px;border-radius:2px;text-transform:uppercase;flex-shrink:0;white-space:nowrap}
+.threat-high{background:var(--red-bg);border:1px solid var(--red-dim);color:#e74c3c}
+.threat-med{background:rgba(230,126,34,.1);border:1px solid #7a4a1a;color:#e67e22}
+.threat-low{background:rgba(52,152,219,.1);border:1px solid #1a4a6a;color:#3498db}
+
+.card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
+.reason-row{display:flex;gap:8px;align-items:flex-start}
+.reason-label{font-size:9px;letter-spacing:2px;color:var(--text-muted);white-space:nowrap;margin-top:1px;text-transform:uppercase;flex-shrink:0}
+.reason-text{font-size:12px;color:var(--text);line-height:1.6}
+.card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.meta-chip{font-size:9px;letter-spacing:1px;color:var(--text-dim);background:var(--bg3);border:1px solid var(--border);padding:3px 8px;border-radius:2px}
+.proofs-row{display:flex;gap:6px;flex-wrap:wrap}
+.proof-thumb{width:56px;height:56px;border-radius:3px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;overflow:hidden;transition:border-color .2s,transform .15s}
+.proof-thumb:active{transform:scale(.95)}
+.proof-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 24px;gap:12px;color:var(--text-muted);text-align:center}
+.empty-state .e-ico{font-size:44px;opacity:.25}
+.empty-state p{font-size:11px;letter-spacing:1px;line-height:1.7}
+
+/* ── ADMIN ── */
+.admin-gate{background:var(--card);border:1px solid var(--red-dim);border-radius:4px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.gate-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:#e74c3c;letter-spacing:2px;text-align:center}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}
+.form-input,.form-select,.form-textarea{background:var(--bg2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;padding:11px 13px;transition:border-color .2s,box-shadow .2s;width:100%}
+.form-input:focus,.form-textarea:focus{border-color:var(--teal-dim);box-shadow:0 0 0 2px rgba(28,181,160,.08)}
+.form-textarea{min-height:80px;resize:vertical}
+.form-select{appearance:none;cursor:pointer}
+
+/* ── USER PREVIEW ── */
+.user-preview{background:var(--bg3);border:1px solid var(--teal-dim);border-radius:4px;padding:14px;display:flex;align-items:center;gap:12px;animation:cardIn .3s ease;box-shadow:0 0 20px rgba(28,181,160,.08)}
+.pv-avatar{width:48px;height:48px;border-radius:4px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--teal);flex-shrink:0;overflow:hidden;position:relative}
+.pv-avatar img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.pv-info .pv-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;color:var(--text)}
+.pv-info .pv-username{font-size:11px;color:var(--teal);margin-top:2px}
+.pv-info .pv-found{font-size:9px;color:var(--text-dim);margin-top:4px;letter-spacing:1px}
+
+.pv-searching{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text-dim);padding:4px 0}
+.pv-spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pv-error{display:flex;align-items:center;gap:8px;font-size:11px;color:#e74c3c;padding:4px 0}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:13px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;border-radius:3px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:white;opacity:0;transition:opacity .15s}
+.btn:active::after{opacity:.08}
+.btn-teal{background:linear-gradient(135deg,var(--teal-dim),var(--teal));color:#071010;box-shadow:0 4px 20px rgba(28,181,160,.2)}
+.btn-teal:hover{box-shadow:0 4px 30px rgba(28,181,160,.4);transform:translateY(-1px)}
+.btn-danger{background:linear-gradient(135deg,var(--red-dim),var(--red));color:#fff;box-shadow:0 4px 20px rgba(192,57,43,.2)}
+.btn-danger:hover{box-shadow:0 4px 30px rgba(192,57,43,.4);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--teal-dim);color:var(--teal);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;width:auto;padding:11px 16px}
+
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:4px 0}
+
+/* ── UPLOAD ── */
+.upload-area{border:1px dashed var(--border);border-radius:3px;padding:18px;text-align:center;cursor:pointer;color:var(--text-muted);font-size:11px;letter-spacing:1px;transition:all .2s}
+.upload-area:hover{border-color:var(--teal-dim);color:var(--text-dim);background:var(--teal-bg)}
+.upload-previews{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.upload-thumb{width:56px;height:56px;border-radius:3px;object-fit:cover;border:1px solid var(--teal-dim);animation:cardIn .3s ease}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--bg3);border:1px solid var(--teal-dim);border-radius:3px;padding:11px 22px;font-size:11px;color:var(--teal-glow);letter-spacing:1px;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.error{border-color:var(--red);color:#e74c3c}
+
+/* ── MODAL ── */
+#modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:20px}
+#modal.open{display:flex}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:4px;width:100%;max-width:360px;max-height:85vh;overflow-y:auto;animation:cardIn .25s ease}
+.modal-close{position:sticky;top:8px;left:calc(100% - 42px);width:34px;height:34px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:8px 8px 0 auto;z-index:1}
+
+/* ── PIN ── */
+.pin-input{width:100%;padding:14px;text-align:center;letter-spacing:8px;font-size:22px;background:var(--bg2);border:1px solid var(--red-dim);border-radius:3px;color:var(--text);font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .2s}
+.pin-input:focus{border-color:var(--red);box-shadow:0 0 0 2px rgba(192,57,43,.1)}
+
+/* ── LOOKUP ROW ── */
+.lookup-row{display:flex;gap:8px;align-items:stretch}
+.lookup-row .form-input{flex:1}
+
+/* Stagger cards */
+.scammer-card:nth-child(1){animation-delay:.05s}
+.scammer-card:nth-child(2){animation-delay:.1s}
+.scammer-card:nth-child(3){animation-delay:.15s}
+.scammer-card:nth-child(4){animation-delay:.2s}
+.scammer-card:nth-child(5){animation-delay:.25s}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-bg">
+    <div class="splash-ring"></div>
+    <div class="splash-ring"></div>
+    <div class="splash-ring"></div>
+  </div>
+  <div class="splash-content">
+    <div class="splash-logo">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="72" height="72" rx="4" stroke="#1cb5a0" stroke-width="1.5" opacity=".4"/>
+        <path d="M12 24L22 56L32 36L42 56L52 24" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="56" y1="24" x2="72" y2="24" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="64" y1="24" x2="64" y2="56" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M20 66L40 74L60 66" stroke="#1cb5a0" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="splash-title">WTSPRJ</div>
+    <div class="splash-sub">Secure Escrow Platform</div>
+    <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+    <div class="splash-pct" id="splash-pct">ЗАГРУЗКА...</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-close" onclick="closeModal()">×</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-top">
+      <div class="logo-row">
+        <div class="mini-logo">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 24L22 56L32 36L42 56L52 24" stroke="#22e8ce" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="56" y1="24" x2="72" y2="24" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
+            <line x1="64" y1="24" x2="64" y2="56" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <div class="t1">WTS ESCROW</div>
+          <div class="t2">BLACKLIST · SECURE PLATFORM</div>
+        </div>
+      </div>
+      <div class="stat-chip">В базе: <span id="total-count">0</span></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('list')" id="tab-list">📋 Список</div>
+      <div class="tab" onclick="switchTab('search')" id="tab-search">🔍 Поиск</div>
+      <div class="tab admin-tab" onclick="switchTab('admin')" id="tab-admin">⚙️ Адмін</div>
+    </div>
+  </header>
+
+  <!-- LIST -->
+  <div class="page active" id="page-list">
+    <div class="section-label">БАЗА СКАМЕРОВ</div>
+    <div id="scammer-list"></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="page" id="page-search">
+    <div class="section-label">ПРОВЕРИТЬ ПОЛЬЗОВАТЕЛЯ</div>
+    <div class="search-wrap">
+      <input class="search-input" id="main-search" type="text" placeholder="@username или имя..." oninput="liveSearch(this.value)"/>
+      <span class="search-icon">🔍</span>
+    </div>
+    <div id="search-results"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page" id="page-admin">
+    <div id="admin-gate-wrap">
+      <div class="admin-gate">
+        <div class="gate-title">🔐 ADMIN ACCESS</div>
+        <div class="form-group">
+          <div class="form-label">PIN-код доступа</div>
+          <input class="pin-input" type="password" id="pin-input" placeholder="••••" maxlength="6" onkeydown="if(event.key==='Enter')checkPin()"/>
+        </div>
+        <button class="btn btn-danger" onclick="checkPin()">ВОЙТИ</button>
+      </div>
+    </div>
+
+    <div id="admin-panel" style="display:none;flex-direction:column;gap:12px;">
+      <div class="section-label">ДОБАВИТЬ В БАЗУ</div>
+
+      <!-- LOOKUP -->
+      <div class="form-group">
+        <div class="form-label">Поиск пользователя Telegram</div>
+        <div class="lookup-row">
+          <input class="form-input" id="lookup-input" type="text" placeholder="@username" onkeydown="if(event.key==='Enter')lookupUser()"/>
+          <button class="btn btn-outline" onclick="lookupUser()">НАЙТИ</button>
+        </div>
+      </div>
+      <div id="user-preview-box"></div>
+      <div class="divider"></div>
+
+      <div class="form-group">
+        <div class="form-label">Имя / Username *</div>
+        <input class="form-input" id="f-name" type="text" placeholder="Заполняется автоматически"/>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Категория угрозы</div>
+        <select class="form-input form-select" id="f-threat">
+          <option value="high">🔴 ВЫСОКАЯ — Мошенник / Скам</option>
+          <option value="med">🟠 СРЕДНЯЯ — Подозрительный</option>
+          <option value="low">🔵 НИЗКАЯ — Предупреждение</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Причина добавления *</div>
+        <textarea class="form-textarea form-input" id="f-reason" placeholder="Опишите подробно что произошло..."></textarea>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Сумма ущерба</div>
+        <input class="form-input" id="f-amount" type="text" placeholder="например: 500 USDT"/>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Доказательства (фото/скрины)</div>
+        <div class="upload-area" onclick="document.getElementById('proof-upload').click()">
+          📎 Нажмите чтобы прикрепить скриншоты
+        </div>
+        <input type="file" id="proof-upload" accept="image/*" multiple style="display:none" onchange="handleProofUpload(this)"/>
+        <div class="upload-previews" id="upload-previews"></div>
+      </div>
+      <button class="btn btn-danger" onclick="addToBlacklist()">+ ДОБАВИТЬ В БАЗУ</button>
+
+      <div class="divider"></div>
+      <div class="section-label">УПРАВЛЕНИЕ БАЗОЙ (<span id="admin-count">0</span>)</div>
+      <div id="admin-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+// Поменяй на свой Railway URL после деплоя backend
+const BACKEND_URL = 'https://YOUR-BACKEND.railway.app';
+const ADMIN_PIN = '1234'; // СМЕНИТЬ!
+
+let isAdmin = false;
+let uploadedProofs = [];
+let foundUser = null;
+
+// ── DEMO DATA ──
+let blacklist = [
+  {id:1,name:'Алексей Мошников',username:'@alex_scam99',letter:'А',photo:null,threat:'high',reason:'Взял предоплату 300 USDT за сделку через эскроу, пропал после получения средств. Номер сделки #WTS-2241.',amount:'300 USDT',date:'18.03.2026',proofs:[]},
+  {id:2,name:'Дмитрий Фейков',username:'@dmitry_fake',letter:'Д',photo:null,threat:'high',reason:'Фейковый продавец крипты. Отправил скриншот транзакции вместо реального перевода. Жертв несколько.',amount:'1200 USDT',date:'10.03.2026',proofs:[]},
+  {id:3,name:'Mike TRX',username:'@mike_trx',letter:'M',photo:null,threat:'med',reason:'Подозрительная активность: создаёт несколько аккаунтов, уклоняется от эскроу-сделок.',amount:'',date:'05.03.2026',proofs:[]}
+];
+
+function saveData(){try{localStorage.setItem('wts_bl',JSON.stringify(blacklist))}catch(e){}}
+function loadData(){try{const d=localStorage.getItem('wts_bl');if(d)blacklist=JSON.parse(d)}catch(e){}}
+
+// ── SPLASH ──
+let pct = 0;
+const pctEl = document.getElementById('splash-pct');
+const pctTimer = setInterval(() => {
+  pct = Math.min(pct + Math.random()*18, 99);
+  pctEl.textContent = Math.floor(pct) + '%';
+  if (pct >= 99) clearInterval(pctTimer);
+}, 120);
+
+setTimeout(() => {
+  pctEl.textContent = '100%';
+  clearInterval(pctTimer);
+  const splash = document.getElementById('splash');
+  splash.classList.add('hide');
+  setTimeout(() => {
+    splash.style.display = 'none';
+    document.getElementById('app').classList.add('show');
+  }, 600);
+}, 3000);
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  renderList();
+  updateCount();
+  if (window.Telegram?.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+});
+
+// ── TABS ──
+function switchTab(name) {
+  ['list','search','admin'].forEach(t => {
+    document.getElementById('page-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+  if(name==='list') renderList();
+  if(name==='search'){document.getElementById('search-results').innerHTML='';document.getElementById('main-search').value='';}
+}
+
+// ── RENDER ──
+function renderList(items) {
+  const list = items||blacklist;
+  const el = document.getElementById('scammer-list');
+  if(!list.length){
+    el.innerHTML=`<div class="empty-state"><div class="e-ico">🛡️</div><p>БАЗА ПУСТА<br/>Скамеры не обнаружены</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(s=>cardHTML(s)).join('');
+}
+
+function cardHTML(s, adminMode=false) {
+  const tClass = s.threat==='high'?'threat-high danger':s.threat==='med'?'threat-med warning':'threat-low';
+  const tLabel = s.threat==='high'?'ОПАСНОСТЬ':s.threat==='med'?'ВНИМАНИЕ':'ПРЕДУПРЕЖДЕНИЕ';
+  const border = s.threat==='high'?'danger':s.threat==='med'?'warning':'';
+  const avatarInner = s.photo
+    ? `<img src="${s.photo}" alt="" onerror="this.style.display='none'"/>${s.letter}`
+    : s.letter;
+  const proofsHTML = s.proofs?.length
+    ? `<div class="reason-row"><span class="reason-label">СКРИНЫ</span><div class="proofs-row">${
+        s.proofs.map((p,i)=>`<div class="proof-thumb" onclick="showProof(${s.id},${i})"><img src="${p}" alt=""/></div>`).join('')
+      }</div></div>` : '';
+  const amountHTML = s.amount ? `<div class="meta-chip">💸 ${s.amount}</div>` : '';
+  const deleteBtn = (isAdmin||adminMode) ? `<div class="meta-chip" style="cursor:pointer;color:#e74c3c;border-color:var(--red-dim)" onclick="removeEntry(${s.id})">🗑 Удалить</div>` : '';
+  return `
+  <div class="scammer-card ${border}" id="card-${s.id}">
+    <div class="card-header">
+      <div class="avatar">${avatarInner}</div>
+      <div class="card-info">
+        <div class="card-name">${s.name}</div>
+        <div class="card-username">${s.username}</div>
+      </div>
+      <div class="threat-badge ${tClass}">${tLabel}</div>
+    </div>
+    <div class="card-body">
+      <div class="reason-row"><span class="reason-label">ПРИЧИНА</span><span class="reason-text">${s.reason}</span></div>
+      ${proofsHTML}
+      <div class="card-meta">${amountHTML}<div class="meta-chip">📅 ${s.date}</div>${deleteBtn}</div>
+    </div>
+  </div>`;
+}
+
+// ── LIVE SEARCH ──
+function liveSearch(q) {
+  const r = document.getElementById('search-results');
+  if(!q.trim()){r.innerHTML='';return;}
+  const clean = q.toLowerCase().replace('@','');
+  const found = blacklist.filter(s=>s.name.toLowerCase().includes(clean)||s.username.toLowerCase().includes(clean));
+  if(!found.length){
+    r.innerHTML=`<div class="empty-state"><div class="e-ico">✅</div><p>В БАЗЕ НЕ НАЙДЕН<br/><span style="font-size:10px;opacity:.5">${q}</span></p></div>`;
+  } else {
+    r.innerHTML=`<div class="section-label" style="margin-bottom:8px;">НАЙДЕНО: ${found.length}</div>`+found.map(s=>cardHTML(s)).join('');
+  }
+}
+
+// ── PROOF MODAL ──
+function showProof(id,idx){
+  const s=blacklist.find(x=>x.id==id);
+  if(!s||!s.proofs[idx])return;
+  document.getElementById('modal-content').innerHTML=`<img style="width:100%;border-radius:3px;padding:8px;" src="${s.proofs[idx]}" alt=""/>`;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+// ── ADMIN PIN ──
+function checkPin(){
+  const v=document.getElementById('pin-input').value;
+  if(v===ADMIN_PIN){
+    isAdmin=true;
+    document.getElementById('admin-gate-wrap').style.display='none';
+    const panel=document.getElementById('admin-panel');
+    panel.style.display='flex';
+    renderAdminList();
+    showToast('✅ Доступ получен');
+  } else {
+    showToast('❌ Неверный PIN',true);
+    document.getElementById('pin-input').value='';
+  }
+}
+
+// ── REAL TG LOOKUP ──
+let lookupTimer=null;
+async function lookupUser(){
+  const raw=document.getElementById('lookup-input').value.trim();
+  const box=document.getElementById('user-preview-box');
+  if(!raw){return;}
+  const username=raw.startsWith('@')?raw.slice(1):raw;
+
+  box.innerHTML=`<div class="user-preview"><div class="pv-searching"><div class="pv-spinner"></div><span>Ищу @${username} в Telegram...</span></div></div>`;
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/lookup?username=${encodeURIComponent(username)}`);
+    const data = await resp.json();
+
+    if(!data.ok){
+      box.innerHTML=`<div class="user-preview" style="border-color:var(--red-dim)"><div class="pv-error">❌ ${data.error||'Пользователь не найден'}</div></div>`;
+      foundUser=null;
+      return;
+    }
+
+    foundUser=data;
+    const avatarHTML = data.photo
+      ? `<img src="${data.photo}" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:4px;"/>${data.letter}`
+      : data.letter;
+
+    box.innerHTML=`
+      <div class="user-preview">
+        <div class="pv-avatar" style="position:relative">${avatarHTML}</div>
+        <div class="pv-info">
+          <div class="pv-name">${data.name}</div>
+          <div class="pv-username">${data.username}</div>
+          <div class="pv-found">✓ Найден в Telegram · ID: ${data.id}</div>
+        </div>
+      </div>`;
+    document.getElementById('f-name').value=`${data.name} ${data.username}`;
+
+  } catch(err) {
+    // Fallback если backend недоступен
+    box.innerHTML=`<div class="user-preview" style="border-color:var(--red-dim)"><div class="pv-error">⚠️ Backend недоступен. Заполни вручную.</div></div>`;
+    foundUser=null;
+  }
+}
+
+// ── UPLOAD ──
+function handleProofUpload(input){
+  const prev=document.getElementById('upload-previews');
+  Array.from(input.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      uploadedProofs.push(e.target.result);
+      const img=document.createElement('img');
+      img.className='upload-thumb';img.src=e.target.result;
+      prev.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── ADD ──
+function addToBlacklist(){
+  const name=document.getElementById('f-name').value.trim();
+  const reason=document.getElementById('f-reason').value.trim();
+  const threat=document.getElementById('f-threat').value;
+  const amount=document.getElementById('f-amount').value.trim();
+  if(!name||!reason){showToast('⚠️ Заполни обязательные поля',true);return;}
+
+  const um=name.match(/@[\w]+/);
+  const username=um?um[0]:'@unknown';
+  const displayName=name.replace(username,'').trim()||username;
+
+  const entry={
+    id:Date.now(),
+    name:displayName,
+    username,
+    letter:(foundUser?.letter)||(displayName[0].toUpperCase()),
+    photo:foundUser?.photo||null,
+    threat,reason,amount,
+    date:new Date().toLocaleDateString('ru-RU'),
+    proofs:[...uploadedProofs]
+  };
+
+  blacklist.unshift(entry);
+  saveData();
+  updateCount();
+  renderAdminList();
+
+  // reset
+  ['f-name','f-reason','f-amount','lookup-input'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('upload-previews').innerHTML='';
+  document.getElementById('user-preview-box').innerHTML='';
+  uploadedProofs=[];foundUser=null;
+  showToast('✅ Добавлено в базу');
+}
+
+// ── REMOVE ──
+function removeEntry(id){
+  blacklist=blacklist.filter(s=>s.id!=id);
+  saveData();updateCount();renderList();renderAdminList();
+  showToast('🗑 Удалено из базы');
+}
+
+// ── ADMIN LIST ──
+function renderAdminList(){
+  document.getElementById('admin-count').textContent=blacklist.length;
+  const el=document.getElementById('admin-list');
+  if(!blacklist.length){el.innerHTML=`<div class="empty-state"><p>База пуста</p></div>`;return;}
+  el.innerHTML=blacklist.map(s=>`
+    <div class="scammer-card" style="margin-bottom:8px;">
+      <div class="card-header" style="padding:10px 12px;">
+        <div class="avatar" style="width:38px;height:38px;font-size:15px;position:relative;">
+          ${s.photo?`<img src="${s.photo}" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:3px;" onerror="this.style.display='none'"/>`:''}
+          ${s.letter}
+        </div>
+        <div class="card-info">
+          <div class="card-name" style="font-size:14px;">${s.name}</div>
+          <div class="card-username">${s.username}</div>
+        </div>
+        <div class="meta-chip" style="cursor:pointer;color:#e74c3c;border-color:var(--red-dim);" onclick="removeEntry(${s.id})">🗑</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── HELPERS ──
+function updateCount(){document.getElementById('total-count').textContent=blacklist.length;}
+let toastTimer;
+function showToast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=err?'error show':'show';
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.className=''},2800);
+}
+</script>
+</body>
+</html>

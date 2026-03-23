@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-httpx
-telethon
-pydantic
-psycopg2-binary

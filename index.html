@@ -293,12 +293,16 @@ header{position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:bl
   <div class="sr sr1"></div><div class="sr sr2"></div><div class="sr sr3"></div>
   <div class="sc">
     <div class="sl">
-      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="72" height="72" rx="4" stroke="#1cb5a0" stroke-width="1.5" opacity=".4"/>
-        <path d="M12 24L22 56L32 36L42 56L52 24" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="56" y1="24" x2="72" y2="24" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="64" y1="24" x2="64" y2="56" stroke="#22e8ce" stroke-width="3.5" stroke-linecap="round"/>
-        <path d="M20 66L40 74L60 66" stroke="#1cb5a0" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+      <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="4" width="96" height="72" rx="4" stroke="#1cb5a0" stroke-width="1.5" opacity=".4"/>
+        <!-- W -->
+        <path d="M8 22L16 54L23 36L30 54L38 22" stroke="#22e8ce" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- T -->
+        <line x1="44" y1="22" x2="58" y2="22" stroke="#22e8ce" stroke-width="3.2" stroke-linecap="round"/>
+        <line x1="51" y1="22" x2="51" y2="54" stroke="#22e8ce" stroke-width="3.2" stroke-linecap="round"/>
+        <!-- S -->
+        <path d="M92 27 Q92 22 86 22 Q79 22 79 29 Q79 36 86 36 Q93 36 93 43 Q93 54 85 54 Q78 54 78 47" stroke="#22e8ce" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M18 66L50 74L82 66" stroke="#1cb5a0" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
       </svg>
     </div>
     <div class="st">WTS BLACKLIST</div>
@@ -312,10 +316,14 @@ header{position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:bl
 <!-- AUTH -->
 <div id="auth">
   <div class="alo">
-    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 24L22 56L32 36L42 56L52 24" stroke="#22e8ce" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="56" y1="24" x2="72" y2="24" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
-      <line x1="64" y1="24" x2="64" y2="56" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
+    <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- W -->
+      <path d="M6 20L14 52L21 34L28 52L36 20" stroke="#22e8ce" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- T -->
+      <line x1="42" y1="20" x2="56" y2="20" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
+      <line x1="49" y1="20" x2="49" y2="52" stroke="#22e8ce" stroke-width="4" stroke-linecap="round"/>
+      <!-- S -->
+      <path d="M90 25 Q90 20 85 20 Q78 20 78 27 Q78 34 85 34 Q92 34 92 43 Q92 52 84 52 Q77 52 77 46" stroke="#22e8ce" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
     </svg>
   </div>
   <div class="atitle">WTS BLACKLIST</div>
@@ -451,6 +459,14 @@ header{position:sticky;top:0;z-index:100;background:var(--bg);backdrop-filter:bl
       </div>
       <div id="lubox"></div>
       <div class="div"></div>
+      <div class="fg">
+        <div class="fl" style="display:flex;align-items:center;gap:6px">
+          Купленный юзернейм (Fragment)
+          <span style="font-size:9px;background:var(--teal-bg);border:1px solid var(--teal-dim);color:var(--teal);padding:1px 6px;border-radius:2px">необязательно</span>
+        </div>
+        <input class="fi" id="fbought" type="text" placeholder="@fragment_username (без TG аккаунта)"/>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:4px">Если скамер использует купленный юзернейм без привязки к аккаунту</div>
+      </div>
       <div class="fg"><div class="fl">Имя / Username *</div><input class="fi" id="fn" type="text" placeholder="Заполняется автоматически"/></div>
       <div class="fg"><div class="fl">Категория угрозы</div>
         <select class="fsel" id="ft">
@@ -1014,14 +1030,17 @@ async function doAdd(){
   const channel=document.getElementById('fch').value.trim();
   const notify=document.getElementById('ntgl').classList.contains('on');
   const um=name.match(/@[\w]+/);
-  const username=um?um[0]:'@unknown';
-  const displayName=name.replace(username,'').trim()||username;
+  const boughtUsername=document.getElementById('fbought')?.value?.trim();
+  const username=um?um[0]:(boughtUsername?(boughtUsername.startsWith('@')?boughtUsername:'@'+boughtUsername):'@unknown');
+  const displayName=name.replace(um?um[0]:'','').trim()||username;
+  const isBought=!um&&!!boughtUsername;
   const amtNum=amtRaw.replace(/[^0-9.]/g,'');
   const currency=amtRaw.replace(/[0-9.\s]/g,'').trim()||'USDT';
 
-  const entry={id:Date.now(),name:displayName,username,letter:fUser?fUser.letter:displayName[0].toUpperCase(),photo:fUser?.photo||null,threat,status,victims,reason,amount:amtNum,currency,date:new Date().toLocaleDateString('ru-RU'),ts:Date.now(),proofs:[...proofs]};
+  const entry={id:Date.now(),name:displayName,username,letter:fUser?fUser.letter:displayName[0].toUpperCase(),photo:fUser?.photo||null,threat,status,victims,reason,amount:amtNum,currency,date:new Date().toLocaleDateString('ru-RU'),ts:Date.now(),proofs:[...proofs],is_bought:isBought};
 
   // Save to backend
+  let saved = false;
   try{
     let photoToSend=entry.photo;
     if(photoToSend&&photoToSend.length>500000) photoToSend=null;
@@ -1029,9 +1048,20 @@ async function doAdd(){
     const payload={...entry,photo:photoToSend,proofs:proofsToSend,date_str:entry.date,added_by:cu?.id||null};
     const r=await fetch(`${BACKEND}/blacklist/add`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d=await r.json();
-    if(d.ok) entry.id=d.id;
-    else console.error('Save failed:',d);
-  }catch(e){console.error('Save error:',e);}
+    if(d.ok){
+      entry.id=d.id; // Use server-generated ID
+      saved=true;
+      console.log('Saved to DB with id:', d.id);
+    } else {
+      console.error('Save failed:',d);
+      toast('⚠️ Ошибка сохранения: '+(d.detail||d.error||''),true);
+    }
+  }catch(e){
+    console.error('Save error:',e);
+    toast('⚠️ Нет связи с сервером',true);
+  }
+
+  if(!saved) return; // Don't add locally if server save failed
 
   db.unshift(entry);
   updCnt();updFC();renderAdmList();
@@ -1053,7 +1083,7 @@ async function doAdd(){
   document.getElementById('nubtn').style.display='';
 
   // Reset
-  ['fn','fr','fa','lu'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['fn','fr','fa','lu','fbought'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('uprevs').innerHTML='';
   document.getElementById('lubox').innerHTML='';
   proofs=[];fUser=null;victims=1;
@@ -1160,7 +1190,76 @@ async function loadTeam(){
 }
 
 // ── SHARE / GROUP SHEET ──
-function shareCard(id){ const s=db.find(x=>x.id==id);if(s)openGS(s,'📤 ПОДЕЛИТЬСЯ КАРТОЧКОЙ'); }
+function shareCard(id){
+  const s=db.find(x=>x.id==id);
+  if(!s)return;
+  const emoji=s.threat==='high'?'🔴':s.threat==='med'?'🟠':'🔵';
+  const label=s.threat==='high'?'СКАМЕР':s.threat==='med'?'ПОДОЗРИТЕЛЬНЫЙ':'ОСТОРОЖНО';
+  const lines=[
+    emoji+' ВНИМАНИЕ — '+label,
+    '',
+    '👤 Имя: '+s.name+(s.username&&s.username!=='@unknown'?' | '+s.username:''),
+    '⚠️ Категория: '+label,
+    '',
+    '📋 Причина: '+s.reason,
+  ];
+  if(s.amount) lines.push('','💸 Ущерб: '+s.amount+' '+(s.currency||'USDT'));
+  if(s.victims) lines.push('👥 Жертв: '+s.victims+' чел.');
+  if(s.date) lines.push('📅 Добавлен: '+s.date);
+  lines.push('','🛡 Проверяй перед сделкой: @WTSBlaskListBot');
+  const text=lines.join('\n');
+
+  // Show share options modal
+  const hasPhoto=!!(s.photo&&s.photo.length>10);
+  const hasProofs=!!(s.proofs&&s.proofs.length>0);
+  const mediaNote=hasPhoto||hasProofs?'<div style="font-size:10px;color:var(--teal);margin-top:6px;letter-spacing:1px">📎 Фото профиля'+(hasProofs?' + '+s.proofs.length+' скрин(ов)':'')+'</div>':'';
+
+  document.getElementById('mcontent').innerHTML=`<div class="mi">
+    <div class="mt">📤 ПОДЕЛИТЬСЯ</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:10px;color:var(--text-dim);white-space:pre-wrap;line-height:1.6">${text.replace(/</g,'&lt;')}</div>
+    ${mediaNote}
+    <button class="btn bt" style="width:100%" onclick="shareTG(${s.id})">📤 Поделиться в Telegram</button>
+    <button class="btn bo" style="width:100%" onclick="shareToGroup(${s.id})">📢 Отправить в группу (с фото)</button>
+    <button class="btn bo" style="width:100%;margin-top:0" onclick="copyShareText(${s.id})">📋 Скопировать текст</button>
+  </div>`;
+  document.getElementById('modal').classList.add('on');
+}
+
+function shareTG(id){
+  const s=db.find(x=>x.id==id); if(!s)return;
+  const emoji=s.threat==='high'?'🔴':s.threat==='med'?'🟠':'🔵';
+  const label=s.threat==='high'?'СКАМЕР':s.threat==='med'?'ПОДОЗРИТЕЛЬНЫЙ':'ОСТОРОЖНО';
+  const lines=[emoji+' ВНИМАНИЕ — '+label,'','👤 Имя: '+s.name+(s.username&&s.username!=='@unknown'?' | '+s.username:''),'⚠️ Категория: '+label,'','📋 Причина: '+s.reason];
+  if(s.amount) lines.push('','💸 Ущерб: '+s.amount+' '+(s.currency||'USDT'));
+  if(s.victims) lines.push('👥 Жертв: '+s.victims+' чел.');
+  lines.push('','🛡 Проверяй перед сделкой: @WTSBlaskListBot');
+  const text=lines.join('\n');
+  try{
+    const shareUrl='https://t.me/share/url?url='+encodeURIComponent('https://t.me/WTSBlaskListBot')+'&text='+encodeURIComponent(text);
+    if(window.Telegram?.WebApp?.openTelegramLink){ Telegram.WebApp.openTelegramLink(shareUrl); closeMdl(); return; }
+    if(window.Telegram?.WebApp?.openLink){ Telegram.WebApp.openLink(shareUrl); closeMdl(); return; }
+  }catch(e){}
+  copyShareText(id);
+}
+
+function copyShareText(id){
+  const s=db.find(x=>x.id==id); if(!s)return;
+  const emoji=s.threat==='high'?'🔴':s.threat==='med'?'🟠':'🔵';
+  const label=s.threat==='high'?'СКАМЕР':s.threat==='med'?'ПОДОЗРИТЕЛЬНЫЙ':'ОСТОРОЖНО';
+  const lines=[emoji+' ВНИМАНИЕ — '+label,'','👤 Имя: '+s.name+(s.username&&s.username!=='@unknown'?' | '+s.username:''),'⚠️ Категория: '+label,'','📋 Причина: '+s.reason];
+  if(s.amount) lines.push('','💸 Ущерб: '+s.amount+' '+(s.currency||'USDT'));
+  if(s.victims) lines.push('👥 Жертв: '+s.victims+' чел.');
+  lines.push('','🛡 Проверяй перед сделкой: @WTSBlaskListBot');
+  const text=lines.join('\n');
+  const fn=()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);closeMdl();toast('📋 Скопировано! Вставь в нужный чат');};
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{closeMdl();toast('📋 Скопировано! Вставь в нужный чат');}).catch(fn); } else fn();
+}
+
+function shareToGroup(id){
+  const s=db.find(x=>x.id==id); if(!s)return;
+  closeMdl();
+  openGS(s,'📢 ОТПРАВИТЬ В ГРУППУ');
+}
 
 function openGS(scammer,title){
   gScammer=scammer; gSelected=null;

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+httpx
+telethon
+pydantic
+asyncpg
+python-telegram-bot[all]
+Pillow
+Pillow
